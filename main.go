@@ -113,7 +113,7 @@ func RunServer(socket net.Listener) {
 
 	// start server
 	if err := milter.RunServer(socket, init); err != nil {
-		log.Fatal(err)
+		log.Fatal("[RunServer]", err)
 	}
 }
 
@@ -170,11 +170,10 @@ func main() {
 		defer os.Remove(address)
 	}
 
-
 	nbrules := 0
 	yaraScan, nbrules, err = LoadYara(dir)
 	if err != nil {
-		log.Println(err)
+		log.Println("[LoadYara]", err)
 	}
 
 	log.Println("[INIT]", nbrules, "YARA rules compiled")

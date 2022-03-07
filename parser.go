@@ -1,28 +1,21 @@
 package main
 
 import (
-	"bytes"
-	"encoding/base64"
 	"errors"
 	"io"
-	"io/ioutil"
 	"log"
-	"mime"
-	"mime/multipart"
-	"mime/quotedprintable"
-	"net/mail"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/hillu/go-yara/v4"
+	"github.com/jhillyerd/enmime"
 )
 
 //var rules *yara.Rules
 var yaraScan *yara.Scanner
 
 // EPayloadNotAllowed is an error that disallows message to pass
-var EPayloadNotAllowed = errors.New("552 Message blocked due to blacklisted attachment")
+var EPayloadNotAllowed = errors.New("552 Message blocked due to forbidden attachment")
 
 func LoadYara(dir string) (*yara.Scanner, int, error) {
 
@@ -63,85 +56,44 @@ func LoadYara(dir string) (*yara.Scanner, int, error) {
 }
 
 func ParseEmailMessage(r io.Reader) error {
-	// get message from input stream
-	msg, err := mail.ReadMessage(r)
-	if err != nil {
-		return err
-	}
-	// get media type from email message
-	media, params, err := mime.ParseMediaType(msg.Header.Get("Content-Type"))
-	if err != nil {
-		return err
-	}
-	// accept messages without attachments
-	if !strings.HasPrefix(media, "multipart/") {
-		return nil
-	}
-	// deep inspect multipart messages
-	mr := multipart.NewReader(msg.Body, params["boundary"])
-	//log.Println(media)
-	for {
-		part, err := mr.NextPart()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
-		// check if part contains a submessage
-		if strings.HasPrefix(part.Header.Get("Content-Type"), "message/") {
-			// recursively process submessage
-			if err := ParseEmailMessage(part); err != nil {
-				return err
-			}
-		}
-		// do not process non-attachment parts
-		if len(part.FileName()) == 0 {
-			continue
-		}
+	env, _ := enmime.ReadEnvelope(r)
 
-		partData, err := ioutil.ReadAll(part)
-		if err != nil {
-			log.Println("Error reading MIME part data -", err)
-			return err
+	/*
+		// Headers can be retrieved via Envelope.GetHeader(name).
+		log.Printf("From: %v\n", env.GetHeader("From"))
+		// Address-type headers can be parsed into a list of decoded mail.Address structs.
+		alist, _ := env.AddressList("To")
+		for _, addr := range alist {
+			log.Printf("To: %s <%s>\n", addr.Name, addr.Address)
 		}
+		log.Printf("Subject: %v\n", env.GetHeader("Subject"))
 
-		contentTransferEncoding := strings.ToUpper(part.Header.Get("Content-Transfer-Encoding"))
+		// The plain text body is available as mime.Text.
+		log.Printf("Text Body: %v chars\n", len(env.Text))
 
-		filename := part.FileName()
+		// The HTML body is stored in mime.HTML.
+		log.Printf("HTML Body: %v chars\n", len(env.HTML))
+
+		// mime.Inlines is a slice of inlined attacments.
+		log.Printf("Inlines: %v\n", len(env.Inlines))
+
+		// mime.Attachments contains the non-inline attachments.
+		log.Printf("Attachments: %v\n", len(env.Attachments))
+	*/
+
+	for _, a := range env.Attachments {
+		//log.Printf("%d\n",len(a.Content))
+		//log.Printf("-%+v\n",string(a.Content))
+
+		filename := a.FileName
 		if verbose {
-			log.Printf("[INFO] test %s file %s\n", msg.Header.Get("Message-ID"), filename)
+			log.Printf("[INFO] test %s file %s\n", env.GetHeader("Message-ID"), filename)
 		}
-		var fileContent []byte
-		switch {
-
-		case strings.Compare(contentTransferEncoding, "BASE64") == 0:
-			decodedContent, err := base64.StdEncoding.DecodeString(string(partData))
-			if err != nil {
-				log.Println("Error decoding base64 -", err)
-			} else {
-				//ioutil.WriteFile(filename, decodedContent, 0644)
-				fileContent = decodedContent
-			}
-
-		case strings.Compare(contentTransferEncoding, "QUOTED-PRINTABLE") == 0:
-			decodedContent, err := ioutil.ReadAll(quotedprintable.NewReader(bytes.NewReader(partData)))
-			if err != nil {
-				log.Println("Error decoding quoted-printable -", err)
-			} else {
-				// ioutil.WriteFile(filename, decodedContent, 0644)
-				fileContent = decodedContent
-			}
-
-		default:
-			// ioutil.WriteFile(filename, partData, 0644)
-			fileContent = partData
-
-		}
+		fileContent := a.Content
 
 		var m yara.MatchRules
-		err = yaraScan.SetCallback(&m).ScanMem(fileContent)
-		if len(m) > 0 {
+		err := yaraScan.SetCallback(&m).ScanMem(fileContent)
+		if err == nil && len(m) > 0 {
 			if verbose {
 				log.Printf("[INFO] %s rule match\n", m[0].Rule)
 			}
