@@ -7,10 +7,16 @@ import (
 	"github.com/hillu/go-yara/v4"
 	"github.com/phalaaxx/milter"
 	"log"
+	"log/syslog"
 	"net"
 	"net/textproto"
 	"os"
 	"strings"
+)
+
+var (
+	verbose bool
+	Version string
 )
 
 /* YaraMilter object */
@@ -21,8 +27,6 @@ type YaraMilter struct {
 	nbrules   int
 	scanner   *yara.Scanner
 }
-
-var verbose bool
 
 func (YaraMilter) Init(sid, mid string) {
 	return
@@ -59,8 +63,8 @@ func (e *YaraMilter) Header(name, value string, m *milter.Modifier) (milter.Resp
 
 /* at end of headers initialize message buffer and add headers to it */
 func (e *YaraMilter) Headers(headers textproto.MIMEHeader, m *milter.Modifier) (milter.Response, error) {
-	// return accept if not a multipart message
-	if !e.multipart {
+	// return accept if not a multipart message or whithout rule
+	if !e.multipart || e.nbrules == 0 {
 		return milter.RespAccept, nil
 	}
 	// prepare message buffer
@@ -125,6 +129,19 @@ func RunServer(socket net.Listener, nbrules int, yaraScan *yara.Scanner) {
 
 /* main program */
 func main() {
+
+	// select log output
+	o, _ := os.Stdout.Stat()
+	if (o.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
+		log.SetOutput(os.Stdout)
+	} else {
+		logwriter, e := syslog.New(syslog.LOG_NOTICE, "yaramilter")
+		if e == nil {
+			log.SetFlags(0)
+			log.SetOutput(logwriter)
+		}
+	}
+
 	// parse commandline arguments
 	var protocol, address, dir string
 	flag.StringVar(&protocol,
@@ -143,6 +160,10 @@ func main() {
 		"verbose",
 		false,
 		"Verbose")
+	flag.Usage = func() {
+		fmt.Printf("yaramilter\n  Version: %s\n\n", Version)
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -176,14 +197,12 @@ func main() {
 		defer os.Remove(address)
 	}
 
-	//nbrules := 0
 	yaraScan, nbrules, err := LoadYara(dir)
 	if err != nil {
 		log.Println("[LoadYara]", err)
 	}
 
 	log.Println("[INIT]", nbrules, "YARA rules compiled")
-	//log.Printf("%+v\n",yaraScan.GetRules())
 
 	// run server
 	go RunServer(socket, nbrules, yaraScan)

@@ -24,7 +24,7 @@ func TestMilterClient(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer socket.Close()
+	//defer socket.Close()
 
 	// run server
 	go RunServer(socket, nbrules, yaraScan)
