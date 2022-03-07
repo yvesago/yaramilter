@@ -11,8 +11,6 @@ import (
 	"github.com/jhillyerd/enmime"
 )
 
-//var rules *yara.Rules
-var yaraScan *yara.Scanner
 
 // EPayloadNotAllowed is an error that disallows message to pass
 var EPayloadNotAllowed = errors.New("552 Message blocked due to forbidden attachment")
@@ -55,7 +53,7 @@ func LoadYara(dir string) (*yara.Scanner, int, error) {
 	return sc, len(rules.GetRules()), nil
 }
 
-func ParseEmailMessage(r io.Reader) error {
+func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner) error {
 	env, _ := enmime.ReadEnvelope(r)
 
 	/*

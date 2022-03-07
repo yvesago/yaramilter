@@ -13,7 +13,7 @@ import (
 /* main program */
 func TestMilterClient(t *testing.T) {
 
-	yaraScan, _, _ = LoadYara("yara/")
+	yaraScan, nbrules, _ := LoadYara("yara/")
 
 	// parse commandline arguments
 	protocol := "tcp"
@@ -27,7 +27,7 @@ func TestMilterClient(t *testing.T) {
 	defer socket.Close()
 
 	// run server
-	go RunServer(socket)
+	go RunServer(socket, nbrules, yaraScan)
 
 	// run tests:
 

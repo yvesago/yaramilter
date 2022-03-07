@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"github.com/hillu/go-yara/v4"
 	"github.com/phalaaxx/milter"
 	"log"
 	"net"
@@ -17,6 +18,8 @@ type YaraMilter struct {
 	milter.Milter
 	multipart bool
 	message   *bytes.Buffer
+	nbrules   int
+	scanner   *yara.Scanner
 }
 
 var verbose bool
@@ -88,10 +91,13 @@ func (e *YaraMilter) BodyChunk(chunk []byte, m *milter.Modifier) (milter.Respons
 
 /* Body is called when email message body has been sent */
 func (e *YaraMilter) Body(m *milter.Modifier) (milter.Response, error) {
+	if e.nbrules == 0 {
+		return milter.RespAccept, nil
+	}
 	// prepare buffer
 	buffer := bytes.NewReader(e.message.Bytes())
 	// parse email message and get accept flag
-	if err := ParseEmailMessage(buffer); err != nil {
+	if err := ParseEmailMessage(buffer, e.scanner); err != nil {
 		if err == EPayloadNotAllowed {
 			// return custom response message
 			return milter.NewResponseStr('y', err.Error()), nil
@@ -102,11 +108,11 @@ func (e *YaraMilter) Body(m *milter.Modifier) (milter.Response, error) {
 	return milter.RespAccept, nil
 }
 
-/* NewObject creates new BogoMilter instance */
-func RunServer(socket net.Listener) {
+/* NewObject creates new YaraMilter instance */
+func RunServer(socket net.Listener, nbrules int, yaraScan *yara.Scanner) {
 	// declare milter init function
 	init := func() (milter.Milter, milter.OptAction, milter.OptProtocol) {
-		return &YaraMilter{},
+		return &YaraMilter{nbrules: nbrules, scanner: yaraScan},
 			milter.OptAddHeader | milter.OptChangeHeader,
 			milter.OptNoConnect | milter.OptNoHelo | milter.OptNoMailFrom | milter.OptNoRcptTo
 	}
@@ -170,8 +176,8 @@ func main() {
 		defer os.Remove(address)
 	}
 
-	nbrules := 0
-	yaraScan, nbrules, err = LoadYara(dir)
+	//nbrules := 0
+	yaraScan, nbrules, err := LoadYara(dir)
 	if err != nil {
 		log.Println("[LoadYara]", err)
 	}
@@ -180,7 +186,7 @@ func main() {
 	//log.Printf("%+v\n",yaraScan.GetRules())
 
 	// run server
-	go RunServer(socket)
+	go RunServer(socket, nbrules, yaraScan)
 
 	// sleep forever
 	select {}
