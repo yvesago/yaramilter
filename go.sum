@@ -1,9 +1,9 @@
 github.com/cention-sany/utf7 v0.0.0-20170124080048-26cad61bd60a h1:MISbI8sU/PSK/ztvmWKFcI7UGb5/HQT7B+i3a2myKgI=
 github.com/cention-sany/utf7 v0.0.0-20170124080048-26cad61bd60a/go.mod h1:2GxOXOlEPAMFPfp014mK1SWq8G8BN8o7/dfYqJrVGn8=
+github.com/go-test/deep v1.0.7 h1:/VSMRlnY/JSyqxQUzQLKVMAskpY/NZKFA5j2P+0pP2M=
 github.com/go-test/deep v1.0.7/go.mod h1:QV8Hv/iy04NyLBxAdO9njL0iVPN1S4d/A3NVv1V36o8=
 github.com/gogs/chardet v0.0.0-20191104214054-4b6791f73a28 h1:gBeyun7mySAKWg7Fb0GOcv0upX9bdaZScs8QcRo8mEY=
 github.com/gogs/chardet v0.0.0-20191104214054-4b6791f73a28/go.mod h1:Pcatq5tYkCW2Q6yrR2VRHlbHpZ/R4/7qyL1TCF7vl14=
-github.com/hillu/go-yara v1.3.0 h1:d9HklhWmCY9M/2dnFxYbNXDOFDid3HPGw53hdVk4Urg=
 github.com/hillu/go-yara/v4 v4.1.0 h1:ZLT9ar+g5r1IgEp1QVYpdqYCgKMNm7DuZYUJpHZ3yUI=
 github.com/hillu/go-yara/v4 v4.1.0/go.mod h1:rkb/gSAoO8qcmj+pv6fDZN4tOa3N7R+qqGlEkzT4iys=
 github.com/jaytaylor/html2text v0.0.0-20200412013138-3577fbdbcff7 h1:g0fAGBisHaEQ0TRq1iBvemFRf+8AEWEmBESSiWB3Vsc=
@@ -13,6 +13,7 @@ github.com/jhillyerd/enmime v0.9.3/go.mod h1:S5ge4lnv/dDDBbAWwtoOFlj14NHiXdw/EqM
 github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=
 github.com/mattn/go-runewidth v0.0.12 h1:Y41i/hVW3Pgwr8gV+J23B9YEY0zxjptBuCWEaxmAOow=
 github.com/mattn/go-runewidth v0.0.12/go.mod h1:RAqKPSqVFrSLVXbA8x7dzmKdmGzieGRCM46jaSJTDAk=
+github.com/mschneider82/milter v1.1.2 h1:GBPXl/mR9JOx/Di3wOZjHZzM6cwheOMOeX1JyD0p1Es=
 github.com/mschneider82/milter v1.1.2/go.mod h1:tO5zYqjX2wmwfver/a2lKFVXrNGauvUY5Y1RemvSbJ8=
 github.com/mschneider82/milterclient v0.0.0-20180417152208-081e1cb2de4b/go.mod h1:aT17FNxMNvVNjk2Kvpz6Dzpbjw2s5GTPiTOjTj7uNWI=
 github.com/mschneider82/milterclient v0.0.0-20200207090825-7b1f79a6cc37 h1:3lR78wa+m2gxhc0db8qg2+9oVQykwZTxT/bcgIa0Gxg=
@@ -34,7 +35,6 @@ golang.org/x/net v0.0.0-20210501142056-aec3718b3fa0/go.mod h1:OJAsFXCWl8Ukc7SiCT
 golang.org/x/sys v0.0.0-20201119102817-f84b799fce68/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20210423082822-04245dca01da/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
+golang.org/x/text v0.3.6 h1:aRYxNxv6iGQlyVaZmk6ZgYEDa+Jg18DxebPSrd6bg1M=
 golang.org/x/text v0.3.6/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
-golang.org/x/text v0.3.7 h1:olpwvP2KacW1ZWvsR7uQhoyTYvKAupfQrRGBFM352Gk=
-golang.org/x/text v0.3.7/go.mod h1:u+2+/6zg+i71rQMx5EYifcz6MCKuco9NR6JIITiCfzQ=
 golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=

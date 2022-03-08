@@ -11,7 +11,6 @@ import (
 	"github.com/jhillyerd/enmime"
 )
 
-
 // EPayloadNotAllowed is an error that disallows message to pass
 var EPayloadNotAllowed = errors.New("552 Message blocked due to forbidden attachment")
 
@@ -92,9 +91,7 @@ func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner) error {
 		var m yara.MatchRules
 		err := yaraScan.SetCallback(&m).ScanMem(fileContent)
 		if err == nil && len(m) > 0 {
-			if verbose {
-				log.Printf("[INFO] %s rule match\n", m[0].Rule)
-			}
+			log.Printf("[INFO] %s : «%s» rule match in file «%s»", env.GetHeader("Message-ID"), m[0].Rule, filename)
 			return EPayloadNotAllowed
 		}
 	}
