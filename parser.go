@@ -108,7 +108,9 @@ func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner) error {
 		var m yara.MatchRules
 		err := yaraScan.SetCallback(&m).ScanMem(fileContent)
 		if err == nil && len(m) > 0 {
-			log.Printf("[INFO] %s : «%s» rule match in file «%s»", env.GetHeader("Message-ID"), m[0].Rule, filename)
+			for k := range m {
+				log.Printf("[INFO] %s : «%s» rule match in file «%s»", env.GetHeader("Message-ID"), m[k].Rule, filename)
+			}
 			return EPayloadNotAllowed
 		}
 	}
