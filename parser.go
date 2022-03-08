@@ -14,6 +14,26 @@ import (
 // EPayloadNotAllowed is an error that disallows message to pass
 var EPayloadNotAllowed = errors.New("552 Message blocked due to forbidden attachment")
 
+func TestValidYaraRule(path []string) (okRules []string) {
+	for _, dir := range path {
+		f, err := os.Open(dir)
+		if err != nil {
+			log.Println("[ERROR]", "Could not open rule file ", dir, err)
+			f.Close()
+			continue
+		}
+		namespace := filepath.Base(dir)[:len(filepath.Base(dir))-4]
+		c, _ := yara.NewCompiler()
+		if err = c.AddFile(f, namespace); err == nil {
+			okRules = append(okRules, dir)
+		} else {
+			log.Println("[ERROR]", "Could not load rule file ", dir, err)
+		}
+		f.Close()
+	}
+	return okRules
+}
+
 func LoadYara(dir string) (*yara.Scanner, int, error) {
 
 	var path []string
@@ -22,7 +42,9 @@ func LoadYara(dir string) (*yara.Scanner, int, error) {
 			log.Println("[ERROR]", err)
 			return err
 		}
-		if !info.IsDir() {
+		if !info.IsDir() && (filepath.Ext(walk) == ".rule" ||
+			filepath.Ext(walk) == ".yar" ||
+			filepath.Ext(walk) == ".yara") {
 			if verbose {
 				log.Println("[INFO] load ", walk)
 			}
@@ -35,15 +57,10 @@ func LoadYara(dir string) (*yara.Scanner, int, error) {
 	if err != nil {
 		return nil, 0, errors.New("Failed to initialize YARA compiler")
 	}
-	for _, dir := range path {
-		f, err := os.Open(dir)
-		if err != nil {
-			log.Println("[ERROR]", "Could not open rule file ", dir, err)
-		}
+	for _, dir := range TestValidYaraRule(path) {
+		f, _ := os.Open(dir)
 		namespace := filepath.Base(dir)[:len(filepath.Base(dir))-4]
-		if err = compiler.AddFile(f, namespace); err != nil {
-			log.Println("[ERROR]", "Could not load rule file ", dir, err)
-		}
+		compiler.AddFile(f, namespace)
 		f.Close()
 	}
 	rules, _ := compiler.GetRules()
