@@ -11,8 +11,20 @@ import (
 	"github.com/jhillyerd/enmime"
 )
 
-// EPayloadNotAllowed is an error that disallows message to pass
-var EPayloadNotAllowed = errors.New("552 Message blocked due to forbidden attachment")
+type Resp struct {
+	code byte
+	err  error
+}
+
+var resp = map[byte]*Resp{
+	'a': &Resp{'a', nil}, // accept
+	'y': &Resp{'y', // custom response
+		errors.New("552 Message blocked due to forbidden attachment")},
+	't': &Resp{'t', // tempfail
+		errors.New("452 Message blocked due to suspicious attachment. Try again latter")},
+	'r': &Resp{'r', nil}, // reject
+	'q': &Resp{'q', nil}, // quarantine
+}
 
 func TestValidYaraRule(path []string) (okRules []string) {
 	for _, dir := range path {
@@ -69,7 +81,7 @@ func LoadYara(dir string) (*yara.Scanner, int, error) {
 	return sc, len(rules.GetRules()), nil
 }
 
-func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner) error {
+func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner, defResp byte) *Resp {
 	env, _ := enmime.ReadEnvelope(r)
 
 	/*
@@ -111,7 +123,7 @@ func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner) error {
 			for k := range m {
 				log.Printf("[INFO] %s : «%s» rule match in file «%s»", env.GetHeader("Message-ID"), m[k].Rule, filename)
 			}
-			return EPayloadNotAllowed
+			return resp[defResp]
 		}
 	}
 	// accept message by default

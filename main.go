@@ -26,6 +26,7 @@ type YaraMilter struct {
 	message   *bytes.Buffer
 	nbrules   int
 	scanner   *yara.Scanner
+	defResp   byte
 }
 
 func (YaraMilter) Init(sid, mid string) {
@@ -101,22 +102,31 @@ func (e *YaraMilter) Body(m *milter.Modifier) (milter.Response, error) {
 	// prepare buffer
 	buffer := bytes.NewReader(e.message.Bytes())
 	// parse email message and get accept flag
-	if err := ParseEmailMessage(buffer, e.scanner); err != nil {
-		if err == EPayloadNotAllowed {
-			// return custom response message
-			return milter.NewResponseStr('y', err.Error()), nil
+	if err := ParseEmailMessage(buffer, e.scanner, e.defResp); err != nil {
+		switch err.code {
+			case 'a':
+				return milter.RespAccept, nil
+			case 'y':
+				return milter.NewResponseStr(err.code, err.err.Error()), nil
+			case 't':
+				return milter.NewResponseStr(err.code, err.err.Error()), nil
+			case 'r':
+				return milter.RespReject, nil
+			case 'q':
+				return milter.NewResponseStr(err.code, ""), nil
+			default:
+				return milter.RespAccept, nil
 		}
-		return nil, err
 	}
 	// accept message by default
 	return milter.RespAccept, nil
 }
 
 /* NewObject creates new YaraMilter instance */
-func RunServer(socket net.Listener, nbrules int, yaraScan *yara.Scanner) {
+func RunServer(socket net.Listener, nbrules int, yaraScan *yara.Scanner, defResp byte) {
 	// declare milter init function
 	init := func() (milter.Milter, milter.OptAction, milter.OptProtocol) {
-		return &YaraMilter{nbrules: nbrules, scanner: yaraScan},
+		return &YaraMilter{nbrules: nbrules, scanner: yaraScan, defResp: defResp},
 			milter.OptAddHeader | milter.OptChangeHeader,
 			milter.OptNoConnect | milter.OptNoHelo | milter.OptNoMailFrom | milter.OptNoRcptTo
 	}
@@ -143,7 +153,7 @@ func main() {
 	}
 
 	// parse commandline arguments
-	var protocol, address, dir string
+	var protocol, address, dir, resp string
 	flag.StringVar(&protocol,
 		"proto",
 		"unix",
@@ -156,6 +166,10 @@ func main() {
 		"dir",
 		"yara/",
 		"Directory with yara rules")
+	flag.StringVar(&resp,
+		"resp",
+		"a",
+		"Defaut response : a, y, t, r, q")
 	flag.BoolVar(&verbose,
 		"verbose",
 		false,
@@ -163,11 +177,23 @@ func main() {
 	flag.Usage = func() {
 		fmt.Printf("yaramilter\n  Version: %s\n\n", Version)
 		flag.PrintDefaults()
+		fmt.Println("\nDefault response:")
+		fmt.Println("\ta : accept, only log matching rules")
+		fmt.Println("\ty : reject with custom response")
+		fmt.Println("\tt : tempfail")
+		fmt.Println("\tr : reject")
+		fmt.Println("\tq : quarantine")
+		fmt.Println("")
 	}
 	flag.Parse()
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		log.Fatal("mandatory directory with yara rules")
+	}
+
+
+	if ! strings.Contains("aytrq", resp) {
+		log.Fatal("unknown response")
 	}
 
 	// make sure the specified protocol is either unix or tcp
@@ -204,8 +230,9 @@ func main() {
 
 	log.Println("[INIT]", nbrules, "YARA rules compiled")
 
+	first := []byte(resp[0:1])
 	// run server
-	go RunServer(socket, nbrules, yaraScan)
+	go RunServer(socket, nbrules, yaraScan, first[0])
 
 	// sleep forever
 	select {}
