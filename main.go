@@ -103,19 +103,24 @@ func (e *YaraMilter) Body(m *milter.Modifier) (milter.Response, error) {
 	buffer := bytes.NewReader(e.message.Bytes())
 	// parse email message and get accept flag
 	if err := ParseEmailMessage(buffer, e.scanner, e.defResp); err != nil {
+		// Add Header
+		if errh := m.AddHeader("X-YaraMilter", string(err.code)); errh != nil {
+			return nil, errh
+		}
 		switch err.code {
-			case 'a':
-				return milter.RespAccept, nil
-			case 'y':
-				return milter.NewResponseStr(err.code, err.err.Error()), nil
-			case 't':
-				return milter.NewResponseStr(err.code, err.err.Error()), nil
-			case 'r':
-				return milter.RespReject, nil
-			case 'q':
-				return milter.NewResponseStr(err.code, ""), nil
-			default:
-				return milter.RespAccept, nil
+		case 'a':
+			return milter.RespAccept, nil
+		case 'y':
+			return milter.NewResponseStr(err.code, err.err.Error()), nil
+		case 't':
+			return milter.RespTempFail, nil
+		case 'r':
+			return milter.RespReject, nil
+		case 'q':
+			m.Quarantine("yara")
+			return milter.RespAccept, nil
+		default:
+			return milter.RespAccept, nil
 		}
 	}
 	// accept message by default
@@ -191,8 +196,7 @@ func main() {
 		log.Fatal("mandatory directory with yara rules")
 	}
 
-
-	if ! strings.Contains("aytrq", resp) {
+	if !strings.Contains("aytrq", resp) {
 		log.Fatal("unknown response")
 	}
 

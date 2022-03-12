@@ -20,10 +20,9 @@ var resp = map[byte]*Resp{
 	'a': &Resp{'a', nil}, // accept
 	'y': &Resp{'y', // custom response
 		errors.New("552 Message blocked due to forbidden attachment")},
-	't': &Resp{'t', // tempfail
-		errors.New("452 Message blocked due to suspicious attachment. Try again latter")},
+	't': &Resp{'t', nil}, // tempfail
 	'r': &Resp{'r', nil}, // reject
-	'q': &Resp{'q', nil}, // quarantine
+	'q': &Resp{'q', errors.New("yara")}, // quarantine
 }
 
 func TestValidYaraRule(path []string) (okRules []string) {
@@ -121,7 +120,7 @@ func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner, defResp byte) *Resp 
 		err := yaraScan.SetCallback(&m).ScanMem(fileContent)
 		if err == nil && len(m) > 0 {
 			for k := range m {
-				log.Printf("[INFO] %s : «%s» rule match in file «%s»", env.GetHeader("Message-ID"), m[k].Rule, filename)
+				log.Printf("[INFO] (%s) «%s» rule match in file «%s» in %s", string(defResp), m[k].Rule, filename, env.GetHeader("Message-ID"))
 			}
 			return resp[defResp]
 		}
