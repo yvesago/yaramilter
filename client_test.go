@@ -24,9 +24,10 @@ func TestMilterClient(t *testing.T) {
 		log.Fatal(err)
 	}
 	//defer socket.Close()
+	cfg := Config{DefaultResponse: "y"}
 
 	// run server
-	go RunServer(socket, nbrules, yaraScan, 'y')
+	go RunServer(socket, nbrules, yaraScan, &cfg)
 
 	// run tests:
 
@@ -76,7 +77,7 @@ func TestMilterResp(t *testing.T) {
 
 	// run server
 
-	for i, r := range []byte{'a', 'y', 'r', 't', 'q'} {
+	for i, r := range []string{"a", "q", "y", "r", "t"} {
 		address := fmt.Sprintf("127.0.0.1:%d", 8126+i)
 
 		// bind to listening address
@@ -84,7 +85,8 @@ func TestMilterResp(t *testing.T) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		go RunServer(socket, nbrules, yaraScan, r)
+		cfg := Config{DefaultResponse: r}
+		go RunServer(socket, nbrules, yaraScan, &cfg)
 		emlFilePath := "message.eml"
 		eml, err := os.Open(emlFilePath)
 		if err != nil {
@@ -98,8 +100,8 @@ func TestMilterResp(t *testing.T) {
 			t.Errorf("Error sending eml to milter: %v", err)
 		}
 
-		fmt.Printf("MsgId: %s, Lastmilter code: %s, Expected code %s\n", msgID, string(last), string(r))
-		if last != r {
+		fmt.Printf("MsgId: %s, Lastmilter code: %s, Expected code %s\n", msgID, string(last), r)
+		if string(last) != r {
 			t.Errorf("Reject from Milter with custom response message, got %v - %v", last, r)
 		}
 	}

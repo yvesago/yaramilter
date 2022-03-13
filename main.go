@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/hillu/go-yara/v4"
 	"github.com/phalaaxx/milter"
+	"github.com/hydronica/toml"
 	"log"
 	"log/syslog"
 	"net"
@@ -26,7 +27,7 @@ type YaraMilter struct {
 	message   *bytes.Buffer
 	nbrules   int
 	scanner   *yara.Scanner
-	defResp   byte
+	cfg *Config
 }
 
 func (YaraMilter) Init(sid, mid string) {
@@ -102,23 +103,23 @@ func (e *YaraMilter) Body(m *milter.Modifier) (milter.Response, error) {
 	// prepare buffer
 	buffer := bytes.NewReader(e.message.Bytes())
 	// parse email message and get accept flag
-	if err := ParseEmailMessage(buffer, e.scanner, e.defResp); err != nil {
+	if err := ParseEmailMessage(buffer, e.scanner, e.cfg); err != nil {
 		// Add Header
 		if errh := m.AddHeader("X-YaraMilter", string(err.code)); errh != nil {
 			return nil, errh
 		}
 		switch err.code {
-		case 'a':
+		case "a":
 			return milter.RespAccept, nil
-		case 'y':
-			return milter.NewResponseStr(err.code, err.err.Error()), nil
-		case 't':
-			return milter.RespTempFail, nil
-		case 'r':
-			return milter.RespReject, nil
-		case 'q':
+		case "q":
 			m.Quarantine("yara")
 			return milter.RespAccept, nil
+		case "y":
+			return milter.NewResponseStr('y', "552 Message blocked due to forbidden attachment"), nil
+		case "t":
+			return milter.RespTempFail, nil
+		case "r":
+			return milter.RespReject, nil
 		default:
 			return milter.RespAccept, nil
 		}
@@ -128,10 +129,10 @@ func (e *YaraMilter) Body(m *milter.Modifier) (milter.Response, error) {
 }
 
 /* NewObject creates new YaraMilter instance */
-func RunServer(socket net.Listener, nbrules int, yaraScan *yara.Scanner, defResp byte) {
+func RunServer(socket net.Listener, nbrules int, yaraScan *yara.Scanner, cfg *Config) {
 	// declare milter init function
 	init := func() (milter.Milter, milter.OptAction, milter.OptProtocol) {
-		return &YaraMilter{nbrules: nbrules, scanner: yaraScan, defResp: defResp},
+		return &YaraMilter{nbrules: nbrules, scanner: yaraScan, cfg: cfg},
 			milter.OptAddHeader | milter.OptChangeHeader,
 			milter.OptNoConnect | milter.OptNoHelo | milter.OptNoMailFrom | milter.OptNoRcptTo
 	}
@@ -142,23 +143,14 @@ func RunServer(socket net.Listener, nbrules int, yaraScan *yara.Scanner, defResp
 	}
 }
 
-/* main program */
-func main() {
-
-	// select log output
-	o, _ := os.Stdout.Stat()
-	if (o.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
-		log.SetOutput(os.Stdout)
-	} else {
-		logwriter, e := syslog.New(syslog.LOG_NOTICE, "yaramilter")
-		if e == nil {
-			log.SetFlags(0)
-			log.SetOutput(logwriter)
-		}
-	}
+func readConf() *Config {
 
 	// parse commandline arguments
-	var protocol, address, dir, resp string
+	var protocol, address, dir, resp, conf string
+	flag.StringVar(&conf,
+		"conf",
+		"",
+		"Config file instead of arguments")
 	flag.StringVar(&protocol,
 		"proto",
 		"unix",
@@ -192,12 +184,31 @@ func main() {
 	}
 	flag.Parse()
 
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		log.Fatal("mandatory directory with yara rules")
+	cfg := Config{}
+	if conf != "" {
+		_, err := toml.DecodeFile(conf, &cfg)
+		if err != nil {
+		log.Fatal("\nError on config file:\n", err)
+		}
+		dir = cfg.YaraDir
+		protocol = cfg.Proto
+		address = cfg.Address
+		verbose = cfg.Verbose
+		resp = cfg.DefaultResponse
+	} else {
+		cfg.YaraDir = dir
+		cfg.Proto = protocol
+		cfg.Address = address
+		cfg.Verbose = verbose
+		cfg.DefaultResponse = resp
 	}
 
-	if !strings.Contains("aytrq", resp) {
-		log.Fatal("unknown response")
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		log.Fatal("missing mandatory directory with yara rules")
+	}
+
+	if !strings.Contains("aqytr", resp) {
+		log.Fatal("unknown default response")
 	}
 
 	// make sure the specified protocol is either unix or tcp
@@ -205,38 +216,59 @@ func main() {
 		log.Fatal("invalid protocol name")
 	}
 
+	return &cfg
+}
+
+/* main program */
+func main() {
+
+	// select log output
+	o, _ := os.Stdout.Stat()
+	if (o.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
+		log.SetOutput(os.Stdout)
+	} else {
+		logwriter, e := syslog.New(syslog.LOG_NOTICE, "yaramilter")
+		if e == nil {
+			log.SetFlags(0)
+			log.SetOutput(logwriter)
+		}
+	}
+
+
+	cfg := readConf()
+
 	// make sure socket does not exist
-	if protocol == "unix" {
+	if cfg.Proto == "unix" {
 		// ignore os.Remove errors
-		os.Remove(address)
+		os.Remove(cfg.Address)
 	}
 
 	// bind to listening address
-	socket, err := net.Listen(protocol, address)
+	socket, err := net.Listen(cfg.Proto, cfg.Address)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer socket.Close()
 
-	if protocol == "unix" {
+	if cfg.Proto == "unix" {
 		// set mode 0660 for unix domain sockets
-		if err := os.Chmod(address, 0660); err != nil {
+		if err := os.Chmod(cfg.Address, 0660); err != nil {
 			log.Fatal(err)
 		}
 		// remove socket on exit
-		defer os.Remove(address)
+		defer os.Remove(cfg.Address)
 	}
 
-	yaraScan, nbrules, err := LoadYara(dir)
+
+	yaraScan, nbrules, err := LoadYara(cfg.YaraDir)
 	if err != nil {
 		log.Println("[LoadYara]", err)
 	}
 
 	log.Println("[INIT]", nbrules, "YARA rules compiled")
 
-	first := []byte(resp[0:1])
 	// run server
-	go RunServer(socket, nbrules, yaraScan, first[0])
+	go RunServer(socket, nbrules, yaraScan, cfg)
 
 	// sleep forever
 	select {}

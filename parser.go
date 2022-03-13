@@ -12,18 +12,17 @@ import (
 )
 
 type Resp struct {
-	code byte
+	code string
 	err  error
 }
 
-var resp = map[byte]*Resp{
-	'a': &Resp{'a', nil}, // accept
-	'y': &Resp{'y', // custom response
-		errors.New("552 Message blocked due to forbidden attachment")},
-	't': &Resp{'t', nil}, // tempfail
-	'r': &Resp{'r', nil}, // reject
-	'q': &Resp{'q', errors.New("yara")}, // quarantine
-}
+/*var resp = map[string]*Resp{
+	"a": &Resp{"a", nil}, // accept
+	"y": &Resp{"y", nil}, // custom response
+	"t": &Resp{"t", nil}, // tempfail
+	"r": &Resp{"r", nil}, // reject
+	"q": &Resp{"q", nil}, // quarantine
+}*/
 
 func TestValidYaraRule(path []string) (okRules []string) {
 	for _, dir := range path {
@@ -80,8 +79,23 @@ func LoadYara(dir string) (*yara.Scanner, int, error) {
 	return sc, len(rules.GetRules()), nil
 }
 
-func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner, defResp byte) *Resp {
+func ResponseLevel(resp string) int {
+	for k, v := range "aqytr" {
+		if string(v) == resp {
+			return k
+		}
+	}
+	return 0
+}
+
+func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner, cfg *Config) *Resp {
 	env, _ := enmime.ReadEnvelope(r)
+	defResp := cfg.DefaultResponse
+	defLevel := ResponseLevel(defResp)
+	rulesResp := map[string]string{}
+	for k := range cfg.RespByRule {
+		rulesResp[cfg.RespByRule[k].Rule] = cfg.RespByRule[k].Resp
+	}
 
 	/*
 		// Headers can be retrieved via Envelope.GetHeader(name).
@@ -106,6 +120,8 @@ func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner, defResp byte) *Resp 
 		log.Printf("Attachments: %v\n", len(env.Attachments))
 	*/
 
+	level := defLevel
+	resp := defResp
 	for _, a := range env.Attachments {
 		//log.Printf("%d\n",len(a.Content))
 		//log.Printf("-%+v\n",string(a.Content))
@@ -118,11 +134,17 @@ func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner, defResp byte) *Resp 
 
 		var m yara.MatchRules
 		err := yaraScan.SetCallback(&m).ScanMem(fileContent)
-		if err == nil && len(m) > 0 {
+		if err == nil && len(m) > 0 { // rule match
 			for k := range m {
-				log.Printf("[INFO] (%s) «%s» rule match in file «%s» in %s", string(defResp), m[k].Rule, filename, env.GetHeader("Message-ID"))
+				if val, ok := rulesResp[m[k].Rule]; ok { // specific response for this rule
+					if ResponseLevel(val) > level {
+						level = ResponseLevel(val)  // response will be set to higher level
+						resp = m[k].Rule
+					}
+				}
+				log.Printf("[INFO] (%s) «%s» rule match in file «%s» in %s", defResp, m[k].Rule, filename, env.GetHeader("Message-ID"))
 			}
-			return resp[defResp]
+			return &Resp{resp, nil}
 		}
 	}
 	// accept message by default
