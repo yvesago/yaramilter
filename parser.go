@@ -79,6 +79,7 @@ func LoadYara(dir string) (*yara.Scanner, int, error) {
 	return sc, len(rules.GetRules()), nil
 }
 
+
 func ResponseLevel(resp string) int {
 	for k, v := range "aqytr" {
 		if string(v) == resp {
@@ -139,7 +140,7 @@ func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner, cfg *Config) *Resp {
 				if val, ok := rulesResp[m[k].Rule]; ok { // specific response for this rule
 					if ResponseLevel(val) > level {
 						level = ResponseLevel(val)  // response will be set to higher level
-						resp = m[k].Rule
+						resp = val
 					}
 				}
 				log.Printf("[INFO] (%s) «%s» rule match in file «%s» in %s", defResp, m[k].Rule, filename, env.GetHeader("Message-ID"))
