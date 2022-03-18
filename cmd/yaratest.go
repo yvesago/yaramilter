@@ -94,7 +94,7 @@ func main() {
 	eml, _ := os.Open(tmpfile)
 	msgID := milterclient.GenMtaID(12)
 
-	last, err := SendEmlSock(eml, protocol, address, "fakefrom@example.com", "faketo@example.com", msgID, false, 5)
+	last, err := SendEmlSock(eml, protocol, address, msgID)
 	if err != nil {
 		log.Printf("Error sending eml to milter: %v", err)
 	}

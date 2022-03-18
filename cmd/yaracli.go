@@ -51,7 +51,7 @@ func main() {
 
 	if len(env.Attachments) > 0 {
 		eml, _ := os.Open(file)
-		last, err := SendEmlSock(eml, protocol, address, "fakefrom@example.com", "faketo@example.com", msgID, false, 5)
+		last, err := SendEmlSock(eml, protocol, address, msgID)
 		if err != nil {
 			log.Printf("Error sending eml to milter: %v", err)
 		}

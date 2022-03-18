@@ -9,7 +9,11 @@ import (
 )
 
 // empty mtaMsgID will generate ID
-func SendEmlSock(eml io.Reader, proto, milterSock, from, to, mtaMsgID string, ipv6 bool, timeoutSecs int) (byte, error) {
+func SendEmlSock(eml io.Reader, proto, milterSock, mtaMsgID string) (byte, error) {
+
+	from := "fakefrom@example.com"
+	to := "faketo@example.com"
+	timeoutSecs := 5
 
 	msg, headers, _ := milterclient.ReadMessage(eml)
 
