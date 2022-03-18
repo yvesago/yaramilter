@@ -227,7 +227,7 @@ func main() {
 	if (o.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
 		log.SetOutput(os.Stdout)
 	} else {
-		logwriter, e := syslog.New(syslog.LOG_NOTICE, "yaramilter")
+		logwriter, e := syslog.New(syslog.LOG_MAIL|syslog.LOG_NOTICE, "yaramilter")
 		if e == nil {
 			log.SetFlags(0)
 			log.SetOutput(logwriter)
