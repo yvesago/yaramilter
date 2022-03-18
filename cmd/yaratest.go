@@ -56,10 +56,7 @@ func readFile(fileName string) []byte {
 	return data
 }
 
-var (
-	verbose bool
-	Version string
-)
+var Version string
 
 /* main program */
 func main() {
@@ -76,10 +73,6 @@ func main() {
 		"file",
 		"",
 		"File")
-	flag.BoolVar(&verbose,
-		"verbose",
-		false,
-		"Verbose")
 	flag.Usage = func() {
 		fmt.Printf("yaratest\n  Version: %s\n\n", Version)
 		flag.PrintDefaults()

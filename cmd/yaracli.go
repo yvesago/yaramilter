@@ -4,26 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"github.com/jhillyerd/enmime"
-//	"github.com/mschneider82/milterclient"
 	"io/ioutil"
 	"log"
 	"os"
 )
 
-func readFile(fileName string) []byte {
+var Version string
 
-	data, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return data
-}
-
-var (
-	verbose bool
-	Version string
-)
 
 /* main program */
 func main() {
@@ -40,10 +27,6 @@ func main() {
 		"file",
 		"",
 		"File")
-	flag.BoolVar(&verbose,
-		"verbose",
-		false,
-		"Verbose")
 	flag.Usage = func() {
 		fmt.Printf("yaracli\n  Version: %s\n\n", Version)
 		flag.PrintDefaults()
@@ -78,6 +61,4 @@ func main() {
 	fmt.Printf("MsgId: %s, Lastmilter code: %s\n", msgID, response)
 
 }
-
-
 
