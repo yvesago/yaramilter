@@ -143,7 +143,7 @@ func ParseEmailMessage(r io.Reader, yaraScan *yara.Scanner, cfg *Config) *Resp {
 						resp = val
 					}
 				}
-				log.Printf("[INFO] (%s) «%s» rule match in file «%s» in %s", defResp, m[k].Rule, filename, env.GetHeader("Message-ID"))
+				log.Printf("[INFO] (%s) «%s» rule match in file «%s» in %s", resp, m[k].Rule, filename, env.GetHeader("Message-ID"))
 			}
 			return &Resp{resp, nil}
 		}
