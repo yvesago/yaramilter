@@ -63,11 +63,15 @@ var (
 
 /* main program */
 func main() {
-	var address, file string
+	var address, protocol, file string
 	flag.StringVar(&address,
 		"addr",
 		"127.0.0.1:8125",
 		"Bind to address")
+	flag.StringVar(&protocol,
+          "proto",
+          "tcp",
+          "Protocol family (unix or tcp)")
 	flag.StringVar(&file,
 		"file",
 		"",
@@ -86,6 +90,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+
 	msg := BuildMail(file)
 
 	//fmt.Println(string(msg))
@@ -96,7 +101,7 @@ func main() {
 	eml, _ := os.Open(tmpfile)
 	msgID := milterclient.GenMtaID(12)
 
-	last, err := milterclient.SendEml(eml, "127.0.0.1:8125", "from@example.com", "to@example.com", "", "", msgID, false, 5)
+	last, err := SendEmlSock(eml, protocol, address, "fakefrom@example.com", "faketo@example.com", msgID, false, 5)
 	if err != nil {
 		log.Printf("Error sending eml to milter: %v", err)
 	}

@@ -25,8 +25,14 @@ libyara.so.9:
 
 yaratest:
 	@mkdir -p build
-	CGO_ENABLED=0 go build ${LDFLAGS} -o build/$@  cmd/$@.go
+	CGO_ENABLED=0 go build ${LDFLAGS} -o build/$@  cmd/$@.go cmd/clienthelpers.go
 	@echo " => bin builded: build/$@"
+
+yaracli:
+	@mkdir -p build
+	CGO_ENABLED=0 go build ${LDFLAGS} -o build/$@  cmd/$@.go cmd/clienthelpers.go
+	@echo " => bin builded: build/$@"
+
 
 
 build: $(TARGET) sha
