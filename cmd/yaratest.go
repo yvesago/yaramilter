@@ -74,7 +74,7 @@ func main() {
 		"",
 		"File")
 	flag.Usage = func() {
-		fmt.Printf("yaratest\n  Version: %s\n\n", Version)
+		fmt.Printf("yaramilter_test\n  Version: %s\n\n", Version)
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -92,6 +92,7 @@ func main() {
 	ioutil.WriteFile(tmpfile, msg, 0644)
 
 	eml, _ := os.Open(tmpfile)
+	defer eml.Close()
 	msgID := milterclient.GenMtaID(12)
 
 	last, err := SendEmlSock(eml, protocol, address, msgID)

@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/jhillyerd/enmime"
-	"io/ioutil"
 	"log"
 	"os"
 )
@@ -28,7 +27,7 @@ func main() {
 		"",
 		"File")
 	flag.Usage = func() {
-		fmt.Printf("yaracli\n  Version: %s\n\n", Version)
+		fmt.Printf("yaramilter_cli\n  Version: %s\n\n", Version)
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -41,7 +40,11 @@ func main() {
 	response := "a"
 	msgID := ""
 
-	teml, _ := os.Open(file)
+	teml, err := os.Open(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer teml.Close()
 	env, e := enmime.ReadEnvelope(teml)
 	if e != nil {
 		log.Fatal(e)
@@ -51,6 +54,7 @@ func main() {
 
 	if len(env.Attachments) > 0 {
 		eml, _ := os.Open(file)
+		defer eml.Close()
 		last, err := SendEmlSock(eml, protocol, address, msgID)
 		if err != nil {
 			log.Printf("Error sending eml to milter: %v", err)

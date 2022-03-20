@@ -1,5 +1,5 @@
 
-TARGET = yaramilter libyara.so.9 yaratest
+TARGET = yaramilter libyara.so.9 yaramilter_test yaramilter_cli
 
 BINS=$(wildcard build/*)
 
@@ -23,14 +23,14 @@ libyara.so.9:
 	ldd build/yaramilter | grep $@ | awk -F' ' '{cmd="cp " $$3 " build/"; system(cmd)}'
 	@echo " => copy $@ in: build/"
 
-yaratest:
+yaramilter_test:
 	@mkdir -p build
-	CGO_ENABLED=0 go build ${LDFLAGS} -o build/$@  cmd/$@.go cmd/clienthelpers.go
+	CGO_ENABLED=0 go build ${LDFLAGS} -o build/$@  cmd/yaratest.go cmd/clienthelpers.go
 	@echo " => bin builded: build/$@"
 
-yaracli:
+yaramilter_cli:
 	@mkdir -p build
-	CGO_ENABLED=0 go build ${LDFLAGS} -o build/$@  cmd/$@.go cmd/clienthelpers.go
+	CGO_ENABLED=0 go build ${LDFLAGS} -o build/$@  cmd/yaracli.go cmd/clienthelpers.go
 	@echo " => bin builded: build/$@"
 
 
