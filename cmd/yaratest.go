@@ -72,7 +72,7 @@ func main() {
 	flag.StringVar(&file,
 		"file",
 		"",
-		"File")
+		"File as attachement")
 	flag.Usage = func() {
 		fmt.Printf("yaramilter_test\n  Version: %s\n\n", Version)
 		flag.PrintDefaults()

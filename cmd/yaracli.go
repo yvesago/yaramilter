@@ -25,7 +25,7 @@ func main() {
 	flag.StringVar(&file,
 		"file",
 		"",
-		"File")
+		"EML file")
 	flag.Usage = func() {
 		fmt.Printf("yaramilter_cli\n  Version: %s\n\n", Version)
 		flag.PrintDefaults()
