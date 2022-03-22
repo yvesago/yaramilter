@@ -24,7 +24,8 @@ func TestMilterClient(t *testing.T) {
 		log.Fatal(err)
 	}
 	//defer socket.Close()
-	cfg := Config{DefaultResponse: "y", MaxLen: 100000, Verbose: true}
+	cfg := Config{DefaultResponse: "y", MaxLen: 900000}
+	verbose = true
 
 	// run server
 	go RunServer(socket, nbrules, yaraScan, &cfg)
@@ -85,7 +86,8 @@ func TestMilterResp(t *testing.T) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		cfg := Config{DefaultResponse: r, MaxLen: 1000, Verbose: true}
+		cfg := Config{DefaultResponse: r, MaxLen: 900000}
+		verbose = true
 		go RunServer(socket, nbrules, yaraScan, &cfg)
 		emlFilePath := "message.eml"
 		eml, err := os.Open(emlFilePath)
