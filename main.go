@@ -147,6 +147,7 @@ func readConf() *Config {
 
 	// parse commandline arguments
 	var protocol, address, dir, resp, conf string
+	var maxlen int64
 	flag.StringVar(&conf,
 		"conf",
 		"",
@@ -167,6 +168,10 @@ func readConf() *Config {
 		"resp",
 		"a",
 		"Defaut response : a, y, t, r, q")
+	flag.Int64Var(&maxlen,
+		"max",
+		100000,
+		"Max len to test file")
 	flag.BoolVar(&verbose,
 		"verbose",
 		false,
@@ -195,12 +200,14 @@ func readConf() *Config {
 		address = cfg.Address
 		verbose = cfg.Verbose
 		resp = cfg.DefaultResponse
+		maxlen = cfg.MaxLen
 	} else {
 		cfg.YaraDir = dir
 		cfg.Proto = protocol
 		cfg.Address = address
 		cfg.Verbose = verbose
 		cfg.DefaultResponse = resp
+		cfg.MaxLen = maxlen
 	}
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {

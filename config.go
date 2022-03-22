@@ -11,5 +11,6 @@ type Config struct {
 	Address         string
 	YaraDir         string
 	DefaultResponse string
+	MaxLen			int64
 	RespByRule      []RespRule
 }
