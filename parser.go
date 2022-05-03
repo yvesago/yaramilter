@@ -56,7 +56,7 @@ func LoadYara(dir string) (*yara.Scanner, int, error) {
 			filepath.Ext(walk) == ".yar" ||
 			filepath.Ext(walk) == ".yara") {
 			if verbose {
-				log.Println("[INFO] load ", walk)
+				log.Println("[INFO] load file:", walk)
 			}
 			path = append(path, walk)
 		}
@@ -73,7 +73,13 @@ func LoadYara(dir string) (*yara.Scanner, int, error) {
 		compiler.AddFile(f, namespace)
 		f.Close()
 	}
+
 	rules, _ := compiler.GetRules()
+	if verbose {
+		for _, r := range rules.GetRules() {
+			log.Printf("[INFO] available rule «%s»", r.Identifier())
+		}
+	}
 	// new scanner
 	sc, _ := yara.NewScanner(rules)
 	return sc, len(rules.GetRules()), nil

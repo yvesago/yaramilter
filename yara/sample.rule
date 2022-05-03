@@ -7,3 +7,13 @@ rule ExampleRule
     condition:
         $my_text_string or $my_hex_string
 }
+
+rule ExampleRule2
+{
+    strings:
+        $my_text_string = "silly plain text attachment file"
+        $my_hex_string = { E2 34 A1 C8 23 FB }
+
+    condition:
+        $my_text_string or $my_hex_string
+}
